@@ -5,14 +5,22 @@
 #include "xdma/cxdma.h"
 static EVP_MD digest_sha256;
 
-static char *device = "/dev/xdma0_control";
-static int fd;
+static char *channelc2h = "/dev/xdma0_c2h_0";
+static char *channelh2c = "/dev/xdma0_h2c_0";
+static int fdc2h, fdh2c;
 static unsigned long _base;
 
 static int crypto_engine_sha256_init(EVP_MD_CTX *ctx) {
-    fd = openDev(device);
-    if(fd){
-        printf("Device Opened !!\n");
+    fdc2h = openChannel(channelc2h);
+    fdh2c = openChannel(channelh2c);
+    if(fdc2h){
+        printf("fdc2h Opened !!\n");
+    }
+    else{
+        printf("Error occured !!\n");
+    }    
+    if(fdh2c){
+        printf("fdh2c Opened !!\n");
     }
     else{
         printf("Error occured !!\n");
@@ -25,6 +33,8 @@ static int crypto_engine_sha256_init(EVP_MD_CTX *ctx) {
 static int crypto_engine_sha256_update(EVP_MD_CTX *ctx,const void *data,size_t count) 
 {
     printf("update called\n");
+    write_from_buffer(channelh2c, fdh2c, (char *)data, count, 0);
+    printf("*****%s, %d ******\n", data, count);
     //unsigned char * digest256 = (unsigned char*) malloc(sizeof(unsigned char)*32);
     //memset(digest256,2,32);
     //count = 32;
@@ -34,13 +44,18 @@ static int crypto_engine_sha256_update(EVP_MD_CTX *ctx,const void *data,size_t c
 
 static int crypto_engine_sha256_final(EVP_MD_CTX *ctx,unsigned char *md) {
     printf("final called\n");
+    //read_to_buffer(channelc2h, fdc2h, md, 32, 0);
     //printf("SHA256 final size of EVP_MD: %d\n", sizeof(EVP_MD));
     //memcpy(md,(unsigned char*)ctx->md_data,32);
-    if(fd){
-        closeDev(fd);  
-        printf("Device Closed !!\n");
-    }
     
+    if(fdc2h){
+        closeChannel(fdc2h);
+        printf("fdc2h Closed !!\n");
+    }
+    if(fdh2c){
+        closeChannel(fdh2c);
+        printf("fdh2c Closed !!\n");
+    }
     return 1;
 }
 
@@ -79,7 +94,7 @@ static int digests(ENGINE *e, const EVP_MD **digest, const int **nids, int nid)
 }
 
 static const char *engine_id = "cryptHdl";
-static const char *engine_name = "A SHA256 engine for FPGA accelerated hardware";
+static const char *engine_name = "A SHA256 engine for FPGA accelerated hardware\n";
 static int bind(ENGINE *e, const char *id)
 {
     int ret = 0;

@@ -142,7 +142,7 @@ uint64_t read_to_buffer(char *fname, int fd, char *buffer, uint64_t size,
 	uint64_t count = 0;
 	char *buf = buffer;
 	off_t offset = base;
-    fprintf(stderr, "read_to_buffer: fname : %s, fd : %d, size : %d, base : %d\n", fname, fd, size, base);
+    //fprintf(stderr, "read_to_buffer: fname : %s, fd : %d, size : %d, base : %d\n", fname, fd, size, base);
 
 	while (count < size) {
 		uint64_t bytes = size - count;
@@ -150,12 +150,12 @@ uint64_t read_to_buffer(char *fname, int fd, char *buffer, uint64_t size,
 		if (bytes > RW_MAX_SIZE)
 			bytes = RW_MAX_SIZE;
 
-        fprintf(stderr, "%d, read\n", bytes);
+        //fprintf(stderr, "%d, read\n", bytes);
 		if (offset) {
 			rc = lseek(fd, offset, SEEK_SET);
 			if (rc != offset) {
-				fprintf(stderr, "%s, seek off 0x%lx != 0x%lx.\n",
-					fname, rc, offset);
+				//fprintf(stderr, "%s, seek off 0x%lx != 0x%lx.\n",
+				//	fname, rc, offset);
 				perror("seek file");
 				return -EIO;
 			}
@@ -164,8 +164,8 @@ uint64_t read_to_buffer(char *fname, int fd, char *buffer, uint64_t size,
 		/* read data from file into memory buffer */
 		rc = read(fd, buf, bytes);
 		if (rc != bytes) {
-			fprintf(stderr, "%s, R off 0x%lx, 0x%lx != 0x%lx.\n",
-				fname, count, rc, bytes);
+			//fprintf(stderr, "%s, R off 0x%lx, 0x%lx != 0x%lx.\n",
+			//	fname, count, rc, bytes);
 				perror("read file");
 			return -EIO;
 		}
@@ -176,8 +176,8 @@ uint64_t read_to_buffer(char *fname, int fd, char *buffer, uint64_t size,
 	}	 
 
 	if (count != size) {
-		fprintf(stderr, "%s, R failed 0x%lx != 0x%lx.\n",
-				fname, count, size);
+		//fprintf(stderr, "%s, R failed 0x%lx != 0x%lx.\n",
+		//		fname, count, size);
 		return -EIO;
 	}
 	return count;
@@ -191,21 +191,21 @@ uint64_t write_from_buffer(char *fname, int fd, char *buffer, uint64_t size,
 	uint64_t count = 0;
 	char *buf = buffer;
 	off_t offset = base;
-	fprintf(stderr, "############\n");
-	fprintf(stderr, "write_from_buffer : fname : %s, fd : %d, size : %d, base : %d\n", fname, fd, size, base);
-	fprintf(stderr, "############\n");
+	//fprintf(stderr, "############\n");
+	//fprintf(stderr, "write_from_buffer : fname : %s, fd : %d, size : %d, base : %d\n", fname, fd, size, base);
+	//fprintf(stderr, "############\n");
 	while (count < size) {
 		uint64_t bytes = size - count;
 
 		if (bytes > RW_MAX_SIZE)
 			bytes = RW_MAX_SIZE;
 
-        fprintf(stderr, "%d, write\n", bytes);
+        //fprintf(stderr, "%d, write\n", bytes);
 		if (offset) {
 			rc = lseek(fd, offset, SEEK_SET);
 			if (rc != offset) {
-				fprintf(stderr, "%s, seek off 0x%lx != 0x%lx.\n",
-					fname, rc, offset);
+				//fprintf(stderr, "%s, seek off 0x%lx != 0x%lx.\n",
+				//	fname, rc, offset);
 				perror("seek file");
 				return -EIO;
 			}
@@ -214,8 +214,8 @@ uint64_t write_from_buffer(char *fname, int fd, char *buffer, uint64_t size,
 		/* write data to file from memory buffer */
 		rc = write(fd, buf, bytes);
 		if (rc != bytes) {
-			fprintf(stderr, "%s, W off 0x%lx, 0x%lx != 0x%lx.\n",
-				fname, offset, rc, bytes);
+			//fprintf(stderr, "%s, W off 0x%lx, 0x%lx != 0x%lx.\n",
+			//	fname, offset, rc, bytes);
 				perror("write file");
 			return -EIO;
 		}
@@ -226,8 +226,8 @@ uint64_t write_from_buffer(char *fname, int fd, char *buffer, uint64_t size,
 	}	 
 
 	if (count != size) {
-		fprintf(stderr, "%s, R failed 0x%lx != 0x%lx.\n",
-				fname, count, size);
+		//fprintf(stderr, "%s, R failed 0x%lx != 0x%lx.\n",
+		//		fname, count, size);
 		return -EIO;
 	}
 	return count;
