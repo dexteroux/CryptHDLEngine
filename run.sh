@@ -21,4 +21,4 @@ cp ./libcryptHdl.so ${OPENSSL_LIB}/engines/libcryptHdl.so
 
 ### Test ###
 #openssl engine dynamic -pre SO_PATH:${OPENSSL_LIB}/engines/libcryptHdl.so -pre ID:cryptHdl -pre LOAD
-echo "Hello my name is abhishek bajpai " | openssl dgst -engine cryptHdl -sha256
+echo "Abhishek Bajpai" | openssl dgst -engine cryptHdl -sha256

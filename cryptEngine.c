@@ -8,8 +8,19 @@ static EVP_MD digest_sha256;
 static char *channelc2h = "/dev/xdma0_c2h_0";
 static char *channelh2c = "/dev/xdma0_h2c_0";
 static int fdc2h, fdh2c;
-static unsigned long _base;
+static unsigned char * padblock;
+static int padblockOffset;
+static int totalCount;
 
+unsigned int LitToBigEndian(unsigned int x)
+{
+	return (((x>>24) & 0x000000ff) | ((x>>8) & 0x0000ff00) | ((x<<8) & 0x00ff0000) | ((x<<24) & 0xff000000));
+}
+
+int createHeader(unsigned char *header, int mode){
+    
+    return 0;
+}
 static int crypto_engine_sha256_init(EVP_MD_CTX *ctx) {
     fdc2h = openChannel(channelc2h);
     fdh2c = openChannel(channelh2c);
@@ -27,14 +38,39 @@ static int crypto_engine_sha256_init(EVP_MD_CTX *ctx) {
     }    
 
     printf("init called\n");
+    padblock = (unsigned char*) malloc(sizeof(unsigned char)*64);
+    padblockOffset = 0; //todo padblockOffset logic
     return 1;
 }
 
 static int crypto_engine_sha256_update(EVP_MD_CTX *ctx,const void *data,size_t count) 
 {
-    printf("update called\n");
-    write_from_buffer(channelh2c, fdh2c, (char *)data, count, 0);
-    printf("*****%s, %d ******\n", data, count);
+    int i, bufferCount;
+    unsigned char * buffer = (unsigned char *)data;
+    totalCount += count; 
+    bufferCount = count/64;
+    printf("%d, %d, %d\n", count, totalCount, bufferCount);
+    if (bufferCount == 128){
+        
+    }
+    else{
+        printf("%d : %d : %d\n", count, bufferCount, count%64);
+        memcpy(padblock, &buffer[bufferCount*64], count%64);
+        printf("Padding start\n");
+    }
+    //mdi = count & 0x3F
+    //buffersize = (count%64) ? (count/64+1)*64: count;
+    //buffer = (unsigned char*) malloc(sizeof(unsigned char)*buffersize);
+    //memcpy(buffer, data, count);
+    
+    //printf("%d : %d\n", count, buffersize);
+    //printf("%s\n", buffer);
+    //printf("update called\n");
+    //free(buffer);
+    //write_from_buffer(channelh2c, fdh2c, (char *)data, count, 0);
+    //for (i=0; i< count; i++){
+    //    printf("%d : %c, %d\n", i, s[i], s[i]);
+    //}
     //unsigned char * digest256 = (unsigned char*) malloc(sizeof(unsigned char)*32);
     //memset(digest256,2,32);
     //count = 32;
@@ -43,11 +79,44 @@ static int crypto_engine_sha256_update(EVP_MD_CTX *ctx,const void *data,size_t c
 }
 
 static int crypto_engine_sha256_final(EVP_MD_CTX *ctx,unsigned char *md) {
+    int i, mdi, padlen, offset, l1, l2;
+    long length;
+    unsigned char* lengthStr;
     printf("final called\n");
+    mdi = totalCount & 0x3F;
+    if (mdi < 56) padlen = 55-mdi;
+    else padlen = 119-mdi;
+    offset = totalCount%64;
+    padblock[offset] = 0x80; 
+    length = totalCount<<3;
+    l1 = LitToBigEndian(length & 0xFFFFFFFF);
+    l2 = LitToBigEndian((length >> 32) & 0xFFFFFFFF);
+    length = (long)l1 << 32 | l2;
+    lengthStr = (unsigned char*)&length;
+    printf("%d mdi = %d : %d\n", totalCount, mdi, padlen);
+    printf("length : %x", length);
+    for(i=0; i < padlen; i++)
+    {
+        offset ++;
+        padblock[offset] = 0x00;
+    }
+    for(i=0; i < 8; i++)
+    {
+        offset ++;
+        padblock[offset] = lengthStr[i];
+    }
+    offset ++;
+    padblock[offset] = totalCount<<3;
+    
+    lengthStr = (unsigned char*)&length;
+    for(i=0; i < 64; i++){
+        printf("%d : ", padblock[i]);
+    }
+    printf("\n");
     //read_to_buffer(channelc2h, fdc2h, md, 32, 0);
     //printf("SHA256 final size of EVP_MD: %d\n", sizeof(EVP_MD));
     //memcpy(md,(unsigned char*)ctx->md_data,32);
-    
+    free(padblock);
     if(fdc2h){
         closeChannel(fdc2h);
         printf("fdc2h Closed !!\n");
