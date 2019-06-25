@@ -1,0 +1,32 @@
+RESET  = 0x01
+ECHO   = 0x02
+WHO    = 0x03
+STATUS = 0x04
+FLUSH  = 0x05
+SEARCH = 0x09
+
+#ALGO
+AES    = 0xAE
+SHA256 = 0x23
+ECC    = 0xEC
+ACORN  = 0xAC
+RANDOM = 0x24
+
+HASH   = 0xB0
+HASH_INIT      = 0xB1
+HASH_CONTINUE  = 0xB2
+HASH_FINAL     = 0xB3
+HASH_STATESET  = 0xB4
+HASH_POW       = 0xB5
+GENBITS        = 0xB6
+SYNC   = 0xAFAF
+
+
+PKTSYNCPTR     = 0
+SOURCEPTR      = 8
+SINCPTR        = 16
+LENPTR         = 24
+ALGOPTR        = 40
+MODEPTR        = 48
+PKTIDPTR       = 56
+ACKREQUEST_PTR = 47

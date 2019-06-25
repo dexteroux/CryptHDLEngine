@@ -135,8 +135,7 @@ uint64_t getopt_integer(char *optarg)
 	return value;
 }
 
-uint64_t read_to_buffer(char *fname, int fd, char *buffer, uint64_t size,
-			uint64_t base)
+uint64_t read_to_buffer(int fd, char *buffer, uint64_t size, uint64_t base)
 {
 	uint64_t rc;
 	uint64_t count = 0;
@@ -184,8 +183,7 @@ uint64_t read_to_buffer(char *fname, int fd, char *buffer, uint64_t size,
 }
 
 
-uint64_t write_from_buffer(char *fname, int fd, char *buffer, uint64_t size,
-			uint64_t base)
+uint64_t write_from_buffer(int fd, char *buffer, uint64_t size, uint64_t base)
 {
 	ssize_t rc;
 	uint64_t count = 0;

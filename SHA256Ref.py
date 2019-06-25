@@ -12,7 +12,7 @@ def rotr(x, y):
 
 def pad(m):
     mdi = len(m) & 0x3F
-    print(len(m)<<3)
+    #print(len(m)<<3)
     length = struct.pack('!Q', len(m)<<3)
     if mdi < 56:
         padlen = 55-mdi
@@ -30,7 +30,7 @@ def pad(m):
     #print("$", b'\x80')
     #print("$", (b'\x00'*padlen))
     #print("$", len(m), hex(len(m)))
-    print(length)
+    #print(length)
     return m + b'\x80' + b'\x00'*padlen + length
 
 def toBigEndian(digest):
