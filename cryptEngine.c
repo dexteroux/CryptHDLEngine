@@ -8,7 +8,19 @@ static EVP_MD digest_sha256;
 
 static char *channelc2h = "/dev/xdma0_c2h_0";
 static char *channelh2c = "/dev/xdma0_h2c_0";
-static char whitener[64] = {
+static char whitener[256] = {
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
@@ -20,39 +32,19 @@ static int padblockOffset;
 static int totalCount;
 static int initialised = 0;
 
+#define debug 0
 unsigned int LitToBigEndian(unsigned int x)
 {
 	return (((x>>24) & 0x000000ff) | ((x>>8) & 0x0000ff00) | ((x<<8) & 0x00ff0000) | ((x<<24) & 0xff000000));
 }
 
 
-static int crypto_engine_sha256_init(EVP_MD_CTX *ctx) {
-    fdc2h = openChannel(channelc2h);
-    fdh2c = openChannel(channelh2c);
-    if(fdc2h){
-        printf("fdc2h Opened !!\n");
-    }
-    else{
-        printf("Error occured !!\n");
-    }    
-    if(fdh2c){
-        printf("fdh2c Opened !!\n");
-    }
-    else{
-        printf("Error occured !!\n");
-    }    
-
-    printf("init called\n");
-    padblock = (unsigned char*) malloc(sizeof(unsigned char)*128);
-    padblockOffset = 0; 
-    initialised = 1;
-    return 1;
-}
 
 int printBuff(unsigned char *str, int len){
     int i;
     for(i=0; i < len; i++){
-            printf("%02x", str[i]);
+        if (i%64 == 0) printf("\n");
+        printf("%02x", str[i]);
     }
     printf("\n");
     return 0;
@@ -133,17 +125,17 @@ int changeEndian(unsigned char * buff, int len){
 }
 
 int sendPacket(unsigned char * buff, int totalCount, int mode){
-    struct Header *header = (struct Header*) malloc(sizeof(struct Header));    
-    createHeader(header, 0, 1, SHA256, mode, 0, totalCount/64);
-    changeEndian((unsigned char *)header, 64);
-    changeEndian((unsigned char *)buff, totalCount);
+    unsigned char *packet = (unsigned char*) malloc(sizeof(unsigned char)*(totalCount+64));
+    struct Header *header = (struct Header*) packet;    
     
-    printf("%x %d : ", mode, totalCount);
-    printBuff((unsigned char *)header, 64); 
-    printf("%x : ", mode);
-    printBuff(buff, totalCount); 
-    write_from_buffer(fdh2c, (char *)header, 64, 0);
-    write_from_buffer(fdh2c, (char *)buff, totalCount, 0);
+    createHeader(header, 0, 1, SHA256, mode, 0, totalCount/64);
+    memcpy(packet + 64, buff, totalCount);
+    printf("%x %d : ", mode, totalCount + 64);
+    printBuff(packet, totalCount+64);
+    changeEndian((unsigned char *)packet, totalCount+64);
+    if (!debug){
+        write_from_buffer(fdh2c, (char *)packet, totalCount+64, 0);
+    }
 }
 
 int getPacket(unsigned char * buff, int len){
@@ -151,9 +143,36 @@ int getPacket(unsigned char * buff, int len){
     //#createHeader(header, 0, 1, SHA256, mode, 0, totalCount/64);
     //#changeEndian((unsigned char *)header, 64);
     //#changeEndian((unsigned char *)buff, totalCount);
-    
-    read_to_buffer(fdc2h, (char *)buff, len, 0);
-    printBuff(buff, len); 
+    if (debug){
+        
+    }
+    else{
+        read_to_buffer(fdc2h, (char *)buff, len, 0);
+        printBuff(buff, len);         
+    }
+}
+
+static int crypto_engine_sha256_init(EVP_MD_CTX *ctx) {
+    fdc2h = openChannel(channelc2h);
+    fdh2c = openChannel(channelh2c);
+    if(fdc2h){
+        printf("fdc2h Opened !!\n");
+    }
+    else{
+        printf("Error occured !!\n");
+    }    
+    if(fdh2c){
+        printf("fdh2c Opened !!\n");
+    }
+    else{
+        printf("Error occured !!\n");
+    }    
+
+    printf("init called\n");
+    padblock = (unsigned char*) malloc(sizeof(unsigned char)*128);
+    padblockOffset = 0; 
+    initialised = 1;
+    return 1;
 }
 
 static int crypto_engine_sha256_update(EVP_MD_CTX *ctx,const void *data,size_t count) 
@@ -182,13 +201,21 @@ static int crypto_engine_sha256_update(EVP_MD_CTX *ctx,const void *data,size_t c
             padblockOffset = count%64;
         }
         else{
-            if (initialised == 1){
-                initialised ++;
-                sendPacket((unsigned char *)buffer + 64*i, 64, HASH_INIT);
+            printf("%d\n", bufferCount-i);
+            if (bufferCount-i >= 4){
+               k = 8; 
             }
             else{
-                sendPacket((unsigned char *)buffer + 64*i, 64, HASH_CONTINUE);
+                k = bufferCount-i;
             }
+            if (initialised == 1){
+                initialised ++;
+                sendPacket((unsigned char *)buffer + 64*i, 64*k, HASH_INIT);
+            }
+            else{
+                sendPacket((unsigned char *)buffer + 64*i, 64*k, HASH_CONTINUE);
+            }
+            i += k-1;
         }        
     }       
     return 1;
@@ -199,6 +226,10 @@ static int crypto_engine_sha256_final(EVP_MD_CTX *ctx,unsigned char *md) {
     printf("final called\n");
     bcount = calculatePadding(padblock, totalCount);
     sendPacket(padblock, 64*bcount, HASH_FINAL);
+    sendPacket(whitener, 256, FLUSH);
+    sendPacket(whitener, 256, FLUSH);
+    sendPacket(whitener, 256, FLUSH);
+    sendPacket(whitener, 256, FLUSH);
     getPacket(md, 64);
     //read_to_buffer(channelc2h, fdc2h, md, 32, 0);
     //printf("SHA256 final size of EVP_MD: %d\n", sizeof(EVP_MD));
