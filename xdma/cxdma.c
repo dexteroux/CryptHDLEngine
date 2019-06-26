@@ -142,7 +142,6 @@ uint64_t read_to_buffer(int fd, char *buffer, uint64_t size, uint64_t base)
 	char *buf = buffer;
 	off_t offset = base;
     //fprintf(stderr, "read_to_buffer: fname : %s, fd : %d, size : %d, base : %d\n", fname, fd, size, base);
-
 	while (count < size) {
 		uint64_t bytes = size - count;
 
@@ -162,7 +161,10 @@ uint64_t read_to_buffer(int fd, char *buffer, uint64_t size, uint64_t base)
 
 		/* read data from file into memory buffer */
 		rc = read(fd, buf, bytes);
-		if (rc != bytes) {
+		//if (rc != bytes)
+		if (rc < bytes) {
+            printf("%d:%d\n", rc, bytes);
+    printf("$$$$$$$$$$$##################################\n");
 			//fprintf(stderr, "%s, R off 0x%lx, 0x%lx != 0x%lx.\n",
 			//	fname, count, rc, bytes);
 				perror("read file");
