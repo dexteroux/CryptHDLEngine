@@ -137,16 +137,16 @@ int sendPacket(unsigned char * buff, int totalCount, int mode){
     memcpy(packet + 64 + totalCount + 64, whitener, 256);
     
     //printf("%x %d : ", mode, totalCount + 64 + 256 + 64);
-    //printBuff(packet, totalCount + 64 + 256 + 64);
+    //printBuff(packet, totalCount + 64); // + 256 + 64);
     //changeEndian((unsigned char *)packet, totalCount + 64 + 256 + 64);
     if (!debug){
         write_from_buffer(fdh2c, (char *)packet, totalCount + 64 + 256 + 64, 0);
-        
     }
 }
 
 int getPacket(unsigned char * buff){
     unsigned char *packet = (unsigned char*) malloc(sizeof(unsigned char)*(64));
+    printf("readResponse\n");
     if (debug){
         
     }
@@ -157,7 +157,7 @@ int getPacket(unsigned char * buff){
         
         memcpy(buff, packet + 32, 32);
         //changeEndian((unsigned char *)buff, 32);
-        //printBuff(buff, 32); 
+        printBuff(buff, 32); 
     }
 }
 
@@ -169,7 +169,7 @@ static int crypto_engine_sha256_init(EVP_MD_CTX *ctx) {
     else{
         printf("Error occured !!\n");
     }
-    //printf("init called\n");
+    printf("init called\n");
     padblock = (unsigned char*) malloc(sizeof(unsigned char)*128);
     padblockOffset = 0; 
     initialised = 1;
@@ -181,7 +181,8 @@ static int crypto_engine_sha256_update(EVP_MD_CTX *ctx,const void *data,size_t c
     int i, j, k, bufferCount;
     unsigned char * buffer = (unsigned char *)data;
     unsigned char * testbuffer;
-    //printf("update called\n", i);    
+    unsigned char *response = (unsigned char*) malloc(sizeof(unsigned char)*(64));
+    printf("update called\n", i);    
     totalCount += count; 
     bufferCount = 0;
     for (i=-1; i <= bufferCount; i++){            
@@ -191,6 +192,7 @@ static int crypto_engine_sha256_update(EVP_MD_CTX *ctx,const void *data,size_t c
                 buffer = buffer - 64 + padblockOffset;
                 bufferCount = (count - 64 + padblockOffset)/64;
                 sendPacket(padblock, 64, HASH_CONTINUE);
+                getPacket(response);
             }
             else{
                 bufferCount = count/64;
@@ -203,8 +205,8 @@ static int crypto_engine_sha256_update(EVP_MD_CTX *ctx,const void *data,size_t c
         }
         else{
             //printf("%d\n", bufferCount-i);
-            if (bufferCount-i >= 4){
-               k = 8; 
+            if (bufferCount-i >= 128){
+               k = 128; 
             }
             else{
                 k = bufferCount-i;
@@ -212,9 +214,11 @@ static int crypto_engine_sha256_update(EVP_MD_CTX *ctx,const void *data,size_t c
             if (initialised == 1){
                 initialised ++;
                 sendPacket((unsigned char *)buffer + 64*i, 64*k, HASH_INIT);
+                getPacket(response);
             }
             else{
                 sendPacket((unsigned char *)buffer + 64*i, 64*k, HASH_CONTINUE);
+                getPacket(response);
             }
             i += k-1;
         }        
@@ -224,7 +228,7 @@ static int crypto_engine_sha256_update(EVP_MD_CTX *ctx,const void *data,size_t c
 
 static int crypto_engine_sha256_final(EVP_MD_CTX *ctx,unsigned char *md) {
     int bcount;
-    //printf("final called\n");
+    printf("final called\n");
     bcount = calculatePadding(padblock, totalCount);
     if (initialised == 1){
         sendPacket(padblock, 64*bcount, HASH);
